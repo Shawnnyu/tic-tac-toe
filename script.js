@@ -55,13 +55,13 @@ const gameLogic = (() => {
       if (checkWin(curPlayer.symbol)) {
         gameOver = true;
         return 0;
+      } else if (turns == 9) {
+        gameOver = true;
+        return 2;
       } else {
         turns++;
         return 1;
       }
-    }
-    if (turns == 10) {
-      return 2;
     }
   };
 
@@ -97,13 +97,10 @@ const gameDisplay = (function (doc) {
   const cellClicked = (index, cell) => {
     const turn = gameLogic.validTurn(index, cell);
     if (turn == 0) {
-      console.log("win");
       resultDisplay.innerHTML = `Player ${gameLogic.getCurPlayer().name} wins`;
     } else if (turn == 1) {
-      console.log("continue");
     } else if (turn == 2) {
       resultDisplay.innerHTML = "TIE";
-      console.log("TIE");
     }
   };
 
