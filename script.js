@@ -1,7 +1,12 @@
+/*Player Module
+ * creates a player with name and symbol*/
+
 const player = (name, symbol) => {
   return { name, symbol };
 };
 
+/* game board module
+ * creates behind the scenes board for later logic*/
 const gameBoard = (() => {
   const board = new Array(9);
 
@@ -24,15 +29,18 @@ const gameBoard = (() => {
   return { getIndex, putEntry, reset };
 })();
 
+/*Game logic Module
+ *behind the scenes implementation of the actual game*/
 const gameLogic = (() => {
-  const p1 = player("John", "X");
-  const p2 = player("Jane", "O");
+  const p1 = player("Player 1", "X");
+  const p2 = player("PLayer 2", "O");
 
-  let turns = 1;
-  let gameOver = false;
+  turns = 1;
+  gameOver = false;
   let curPlayer = p1;
 
   const getCurPlayer = () => {
+    curPlayer = turns % 2 != 0 ? p1 : p2;
     return curPlayer;
   };
 
@@ -48,19 +56,20 @@ const gameLogic = (() => {
   ];
 
   const validTurn = (index, cell) => {
-    curPlayer = turns % 2 != 0 ? p1 : p2;
+    curPlayer = getCurPlayer();
+
     if (gameBoard.getIndex(index) == undefined && gameOver == false && turns < 10) {
       gameBoard.putEntry(index, curPlayer.symbol);
       gameDisplay.updateCell(cell, curPlayer.symbol);
       if (checkWin(curPlayer.symbol)) {
+        gameDisplay.finishGame("win");
         gameOver = true;
-        return 0;
       } else if (turns == 9) {
         gameOver = true;
-        return 2;
+        gameDisplay.finishGame("tie");
       } else {
         turns++;
-        return 1;
+        gameDisplay.updateTurn();
       }
     }
   };
@@ -84,34 +93,55 @@ const gameLogic = (() => {
   return { validTurn, getCurPlayer, resetGame };
 })();
 
+/*Game display Module
+ * Updates the game board that the user sees and interacts with*/
 const gameDisplay = (function (doc) {
   const cells = [...doc.getElementsByClassName("cell")];
-  const resultDisplay = document.querySelector(".result");
   const resetBtn = document.querySelector(".reset");
+  const turnDisplay = document.querySelector(".turn-display");
   cells.forEach((cell) => cell.addEventListener("click", () => cellClicked(cell.getAttribute("data-cell"), cell)));
 
+  const updateTurn = () => {
+    const curPlayer = gameLogic.getCurPlayer();
+    turnDisplay.innerHTML = `${curPlayer.name} (${curPlayer.symbol})'s  turn`;
+  };
+
+  const finishGame = (result) => {
+    if (result == "win") {
+      const curPlayer = gameLogic.getCurPlayer();
+      turnDisplay.innerHTML = `${curPlayer.name} (${curPlayer.symbol}) wins!`;
+    } else {
+      turnDisplay.innerHTML = `TIE`;
+    }
+  };
+
+  updateTurn();
+
   const updateCell = (cell, symbol) => {
-    cell.innerHTML = symbol;
+    const para = document.createElement("p");
+    const content = document.createTextNode(symbol);
+    para.appendChild(content);
+    if (symbol == "X") {
+      para.classList.add("x-symbol");
+    } else {
+      para.classList.add("o-symbol");
+    }
+
+    cell.appendChild(para);
   };
 
   const cellClicked = (index, cell) => {
     const turn = gameLogic.validTurn(index, cell);
-    if (turn == 0) {
-      resultDisplay.innerHTML = `Player ${gameLogic.getCurPlayer().name} wins`;
-    } else if (turn == 1) {
-    } else if (turn == 2) {
-      resultDisplay.innerHTML = "TIE";
-    }
   };
 
   const resetGame = () => {
     cells.forEach((cell) => (cell.innerHTML = ""));
     gameBoard.reset();
     gameLogic.resetGame();
-    resultDisplay.innerHTML = null;
+    updateTurn();
   };
 
   resetBtn.addEventListener("click", resetGame);
 
-  return { updateCell };
+  return { updateCell, updateTurn, finishGame };
 })(document);
